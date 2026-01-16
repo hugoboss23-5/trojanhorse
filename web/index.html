@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <title>FEELD Pipes</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        max-width: 960px;
+      }
+      h1 {
+        margin-bottom: 8px;
+      }
+      .card {
+        border: 1px solid #ddd;
+        padding: 16px;
+        margin-bottom: 16px;
+        border-radius: 8px;
+      }
+      label {
+        display: block;
+        font-weight: bold;
+        margin-top: 8px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        margin-top: 4px;
+      }
+      button {
+        margin-top: 12px;
+        padding: 8px 16px;
+      }
+      pre {
+        background: #f7f7f7;
+        padding: 12px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>FEELD Pipes</h1>
+    <p>Direct settlement demo with 1% Safety/Growth routing.</p>
+
+    <div class="card">
+      <h2>Create Account</h2>
+      <button id="create-account">Create Account</button>
+      <pre id="account-output"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Create Transaction</h2>
+      <label>From Account</label>
+      <input id="from-account" placeholder="acct:..." />
+
+      <label>From Secret</label>
+      <input id="from-secret" placeholder="hex secret" />
+
+      <label>To Account</label>
+      <input id="to-account" placeholder="acct:..." />
+
+      <label>Amount</label>
+      <input id="amount" value="100.00" />
+
+      <label>Currency</label>
+      <input id="currency" value="USD" />
+
+      <label>Metadata (JSON)</label>
+      <textarea id="metadata">{}</textarea>
+
+      <button id="send-transaction">Send Transaction</button>
+      <pre id="tx-output"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Lookup Receipt</h2>
+      <label>Transaction ID</label>
+      <input id="lookup-id" placeholder="transaction id" />
+      <button id="lookup-transaction">Lookup</button>
+      <pre id="lookup-output"></pre>
+    </div>
+
+    <script src="/web/app.js"></script>
+  </body>
+</html>
