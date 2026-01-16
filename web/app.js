@@ -20,6 +20,22 @@ function hexToBytes(hex) {
   return bytes;
 }
 
+function sortKeys(value) {
+  if (Array.isArray(value)) {
+    return value.map(sortKeys);
+  }
+  if (value && typeof value === "object") {
+    const sorted = {};
+    Object.keys(value)
+      .sort()
+      .forEach((key) => {
+        sorted[key] = sortKeys(value[key]);
+      });
+    return sorted;
+  }
+  return value;
+}
+
 function canonicalPayload(tx) {
   const payload = {
     id: tx.id,
@@ -30,7 +46,7 @@ function canonicalPayload(tx) {
     created_at: tx.created_at,
     metadata: tx.metadata,
   };
-  return JSON.stringify(payload, Object.keys(payload).sort());
+  return JSON.stringify(sortKeys(payload));
 }
 
 async function signTransaction(secretHex, tx) {

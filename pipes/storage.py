@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from contextlib import contextmanager
 from dataclasses import asdict
@@ -43,6 +44,9 @@ def _event_payload(event: LedgerEvent) -> str:
 class SqliteLedger:
     def __init__(self, path: str) -> None:
         self._path = path
+        directory = os.path.dirname(os.path.abspath(path))
+        if directory and not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True)
         self._init_db()
 
     @contextmanager
