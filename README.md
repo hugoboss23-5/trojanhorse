@@ -18,6 +18,7 @@ infrastructure; it is the foundation for the next build phase.
 Architecture and MVP plan:
 - `docs/architecture.md`
 - `docs/mvp.md`
+- `docs/deploy.md`
 
 API quick start (PowerShell):
 
@@ -32,6 +33,10 @@ by id.
 
 Web UI:
 - Start the API and open `http://127.0.0.1:8000/` in a browser.
+
+Smoke tests:
+- `scripts/smoke_test.sh`
+- `scripts/smoke_test.ps1`
 
 Solidity prototype:
 - `contracts/FeeldToken.sol`
