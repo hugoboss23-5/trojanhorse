@@ -13,6 +13,11 @@ body {
     height: 100vh;
     background: #0a0a0a;
     position: relative;
+    cursor: default;
+}
+
+#canvas.connecting {
+    cursor: crosshair;
 }
 
 #canvas::after {
@@ -32,24 +37,40 @@ body {
     height: 50px;
     background: #4a4a4a;
     cursor: grab;
+    transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.block:hover {
+    background: #525252;
 }
 
 .block.dragging {
     cursor: grabbing;
+    z-index: 1000;
+}
+
+.block.grounded {
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 .block.wobble {
     background: #5a4444;
-    animation: wobble 0.15s ease-in-out infinite alternate;
 }
 
-@keyframes wobble {
-    0% {
-        transform: translateX(-2px);
-    }
-    100% {
-        transform: translateX(2px);
-    }
+.block.highlight-dependent {
+    background: #4a5a4a;
+    box-shadow: 0 0 8px rgba(100, 200, 100, 0.2);
+}
+
+.block.highlight-supporter {
+    background: #4a4a5a;
+    box-shadow: 0 0 8px rgba(100, 100, 200, 0.2);
+}
+
+.block.deleting {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.1s ease, transform 0.1s ease;
 }
 
 #connections {
@@ -62,10 +83,21 @@ body {
 }
 
 .connection-line {
-    stroke: #444;
-    stroke-width: 2;
+    stroke: #333;
+    stroke-width: 1.5;
     pointer-events: stroke;
     cursor: pointer;
+    transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.connection-line.load-bearing {
+    stroke: #555;
+    stroke-width: 2;
+}
+
+.connection-line.floating {
+    stroke: #2a2a2a;
+    stroke-width: 1;
 }
 
 .temp-line {

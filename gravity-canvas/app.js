@@ -4,6 +4,7 @@ const connections = [];
 const SINK_SPEED = 0.8;
 const BLOCK_WIDTH = 80;
 const BLOCK_HEIGHT = 50;
+const FALL_DELAY = 150;
 
 let draggedBlock = null;
 let offsetX = 0;
@@ -12,6 +13,8 @@ let offsetY = 0;
 let isConnecting = false;
 let connectionStart = null;
 let tempLine = null;
+
+let hoveredBlock = null;
 
 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 svg.id = 'connections';
@@ -22,8 +25,23 @@ defs.innerHTML = `
     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
         <polygon points="0 0, 10 3.5, 0 7" fill="#444" />
     </marker>
+    <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
 `;
 svg.appendChild(defs);
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Shift') {
+        canvas.classList.add('connecting');
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.key === 'Shift') {
+        canvas.classList.remove('connecting');
+    }
+});
 
 canvas.addEventListener('click', (e) => {
     if (e.target !== canvas) return;
@@ -33,6 +51,8 @@ canvas.addEventListener('click', (e) => {
     block.className = 'block';
     block.style.left = (e.clientX - 40) + 'px';
     block.style.top = (e.clientY - 25) + 'px';
+    block.dataset.fallDelay = '0';
+    block.dataset.wobbleOffset = Math.random() * Math.PI * 2;
     canvas.appendChild(block);
     blocks.push(block);
 });
@@ -57,6 +77,7 @@ canvas.addEventListener('mousedown', (e) => {
 
     draggedBlock = e.target;
     draggedBlock.classList.add('dragging');
+    draggedBlock.dataset.fallDelay = '0';
 
     const rect = draggedBlock.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
@@ -99,6 +120,20 @@ document.addEventListener('mouseup', (e) => {
     }
 });
 
+canvas.addEventListener('mouseover', (e) => {
+    if (e.target.classList.contains('block')) {
+        hoveredBlock = e.target;
+        updateHoverHighlights();
+    }
+});
+
+canvas.addEventListener('mouseout', (e) => {
+    if (e.target.classList.contains('block')) {
+        hoveredBlock = null;
+        clearHoverHighlights();
+    }
+});
+
 canvas.addEventListener('contextmenu', (e) => {
     e.preventDefault();
 
@@ -137,6 +172,7 @@ function createConnection(supporter, dependent) {
     connections.push({ supporter, dependent, line });
     updateConnectionLines();
     updateWobbleStates();
+    updateConnectionWeights();
 }
 
 function removeConnection(index) {
@@ -148,6 +184,8 @@ function removeConnection(index) {
 
     updateConnectionIndices();
     updateWobbleStates();
+    updateConnectionWeights();
+    markUnsupportedForFall();
 }
 
 function updateConnectionIndices() {
@@ -160,17 +198,25 @@ function deleteBlock(block) {
     const index = blocks.indexOf(block);
     if (index === -1) return;
 
-    for (let i = connections.length - 1; i >= 0; i--) {
-        if (connections[i].supporter === block || connections[i].dependent === block) {
-            svg.removeChild(connections[i].line);
-            connections.splice(i, 1);
-        }
-    }
-    updateConnectionIndices();
+    block.classList.add('deleting');
 
-    blocks.splice(index, 1);
-    canvas.removeChild(block);
-    updateWobbleStates();
+    setTimeout(() => {
+        for (let i = connections.length - 1; i >= 0; i--) {
+            if (connections[i].supporter === block || connections[i].dependent === block) {
+                svg.removeChild(connections[i].line);
+                connections.splice(i, 1);
+            }
+        }
+        updateConnectionIndices();
+
+        blocks.splice(index, 1);
+        if (block.parentNode) {
+            canvas.removeChild(block);
+        }
+        updateWobbleStates();
+        updateConnectionWeights();
+        markUnsupportedForFall();
+    }, 100);
 }
 
 function updateConnectionLines() {
@@ -281,25 +327,135 @@ function hasSupport(block, visited = new Set()) {
     return false;
 }
 
+function updateConnectionWeights() {
+    for (const conn of connections) {
+        const supporterGrounded = hasSupport(conn.supporter);
+        if (supporterGrounded) {
+            conn.line.classList.add('load-bearing');
+            conn.line.classList.remove('floating');
+            conn.line.setAttribute('marker-end', 'url(#arrowhead-active)');
+        } else {
+            conn.line.classList.remove('load-bearing');
+            conn.line.classList.add('floating');
+            conn.line.setAttribute('marker-end', 'url(#arrowhead)');
+        }
+    }
+}
+
+function updateGroundedStates() {
+    for (const block of blocks) {
+        if (isGrounded(block)) {
+            block.classList.add('grounded');
+        } else {
+            block.classList.remove('grounded');
+        }
+    }
+}
+
+function markUnsupportedForFall() {
+    for (const block of blocks) {
+        if (!hasSupport(block) && !isWobbling(block)) {
+            block.dataset.fallDelay = Date.now().toString();
+        }
+    }
+}
+
+function getDependents(block, visited = new Set()) {
+    const dependents = new Set();
+    for (const conn of connections) {
+        if (conn.supporter === block && !visited.has(conn.dependent)) {
+            dependents.add(conn.dependent);
+            visited.add(conn.dependent);
+            const subDeps = getDependents(conn.dependent, visited);
+            subDeps.forEach(d => dependents.add(d));
+        }
+    }
+    return dependents;
+}
+
+function getSupporters(block, visited = new Set()) {
+    const supporters = new Set();
+    for (const conn of connections) {
+        if (conn.dependent === block && !visited.has(conn.supporter)) {
+            supporters.add(conn.supporter);
+            visited.add(conn.supporter);
+            const subSups = getSupporters(conn.supporter, visited);
+            subSups.forEach(s => supporters.add(s));
+        }
+    }
+    return supporters;
+}
+
+function updateHoverHighlights() {
+    if (!hoveredBlock) return;
+
+    const dependents = getDependents(hoveredBlock);
+    const supporters = getSupporters(hoveredBlock);
+
+    dependents.forEach(b => b.classList.add('highlight-dependent'));
+    supporters.forEach(b => b.classList.add('highlight-supporter'));
+}
+
+function clearHoverHighlights() {
+    for (const block of blocks) {
+        block.classList.remove('highlight-dependent');
+        block.classList.remove('highlight-supporter');
+    }
+}
+
+let wobbleTime = 0;
+
 function applyGravity() {
     const groundY = getGroundY();
+    const now = Date.now();
+    wobbleTime += 0.05;
 
     for (const block of blocks) {
         if (block === draggedBlock) continue;
 
         const currentY = parseFloat(block.style.top) || 0;
 
-        if (currentY >= groundY) continue;
+        if (currentY >= groundY) {
+            block.style.top = groundY + 'px';
+            continue;
+        }
 
-        if (isWobbling(block)) continue;
+        if (isWobbling(block)) {
+            const offset = parseFloat(block.dataset.wobbleOffset) || 0;
+            const wobbleX = Math.sin(wobbleTime * 8 + offset) * 2 +
+                           Math.sin(wobbleTime * 13 + offset * 2) * 0.5;
+            block.style.transform = `translateX(${wobbleX}px)`;
+            continue;
+        } else {
+            block.style.transform = '';
+        }
 
-        if (hasSupport(block)) continue;
+        if (hasSupport(block)) {
+            block.dataset.fallDelay = '0';
+            continue;
+        }
 
-        const newY = Math.min(currentY + SINK_SPEED, groundY);
+        const fallStart = parseInt(block.dataset.fallDelay) || 0;
+        if (fallStart === 0) {
+            block.dataset.fallDelay = now.toString();
+            continue;
+        }
+
+        if (now - fallStart < FALL_DELAY) {
+            continue;
+        }
+
+        const elapsed = now - fallStart - FALL_DELAY;
+        const easeIn = Math.min(1, elapsed / 300);
+        const speed = SINK_SPEED * easeIn;
+
+        const newY = Math.min(currentY + speed, groundY);
         block.style.top = newY + 'px';
     }
 
+    updateGroundedStates();
     updateConnectionLines();
+    updateConnectionWeights();
     requestAnimationFrame(applyGravity);
 }
 
