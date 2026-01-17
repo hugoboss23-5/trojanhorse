@@ -1,0 +1,38 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow: hidden;
+}
+
+#canvas {
+    width: 100vw;
+    height: 100vh;
+    background: #0a0a0a;
+    position: relative;
+}
+
+#canvas::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #333, transparent);
+}
+
+.block {
+    position: absolute;
+    width: 80px;
+    height: 50px;
+    background: #4a4a4a;
+    cursor: grab;
+}
+
+.block.dragging {
+    cursor: grabbing;
+}
