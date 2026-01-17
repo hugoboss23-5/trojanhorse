@@ -1,4 +1,7 @@
 const canvas = document.getElementById('canvas');
+const blocks = [];
+const SINK_SPEED = 0.8;
+const BLOCK_HEIGHT = 50;
 
 let draggedBlock = null;
 let offsetX = 0;
@@ -12,6 +15,7 @@ canvas.addEventListener('click', (e) => {
     block.style.left = (e.clientX - 40) + 'px';
     block.style.top = (e.clientY - 25) + 'px';
     canvas.appendChild(block);
+    blocks.push(block);
 });
 
 canvas.addEventListener('mousedown', (e) => {
@@ -38,3 +42,26 @@ document.addEventListener('mouseup', () => {
         draggedBlock = null;
     }
 });
+
+function getGroundY() {
+    return canvas.clientHeight - BLOCK_HEIGHT;
+}
+
+function applyGravity() {
+    const groundY = getGroundY();
+
+    for (const block of blocks) {
+        if (block === draggedBlock) continue;
+
+        const currentY = parseFloat(block.style.top) || 0;
+
+        if (currentY < groundY) {
+            const newY = Math.min(currentY + SINK_SPEED, groundY);
+            block.style.top = newY + 'px';
+        }
+    }
+
+    requestAnimationFrame(applyGravity);
+}
+
+requestAnimationFrame(applyGravity);
