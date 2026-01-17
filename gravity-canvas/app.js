@@ -136,6 +136,7 @@ function createConnection(supporter, dependent) {
 
     connections.push({ supporter, dependent, line });
     updateConnectionLines();
+    updateWobbleStates();
 }
 
 function removeConnection(index) {
@@ -146,6 +147,7 @@ function removeConnection(index) {
     connections.splice(index, 1);
 
     updateConnectionIndices();
+    updateWobbleStates();
 }
 
 function updateConnectionIndices() {
@@ -168,6 +170,7 @@ function deleteBlock(block) {
 
     blocks.splice(index, 1);
     canvas.removeChild(block);
+    updateWobbleStates();
 }
 
 function updateConnectionLines() {
@@ -190,6 +193,75 @@ function getGroundY() {
 function isGrounded(block) {
     const y = parseFloat(block.style.top) || 0;
     return y >= getGroundY() - 0.5;
+}
+
+function findCyclicBlocks() {
+    const inCycle = new Set();
+
+    for (const block of blocks) {
+        if (isInCycle(block, new Set())) {
+            inCycle.add(block);
+        }
+    }
+
+    return inCycle;
+}
+
+function isInCycle(block, visited, start = null) {
+    if (start === null) start = block;
+
+    for (const conn of connections) {
+        if (conn.dependent === block) {
+            const supporter = conn.supporter;
+
+            if (supporter === start) {
+                return true;
+            }
+
+            if (!visited.has(supporter)) {
+                visited.add(supporter);
+                if (isInCycle(supporter, visited, start)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+function getDependentsOfWobbling(wobblingSet) {
+    const allWobbling = new Set(wobblingSet);
+    let changed = true;
+
+    while (changed) {
+        changed = false;
+        for (const conn of connections) {
+            if (allWobbling.has(conn.supporter) && !allWobbling.has(conn.dependent)) {
+                allWobbling.add(conn.dependent);
+                changed = true;
+            }
+        }
+    }
+
+    return allWobbling;
+}
+
+function updateWobbleStates() {
+    const cyclicBlocks = findCyclicBlocks();
+    const allWobbling = getDependentsOfWobbling(cyclicBlocks);
+
+    for (const block of blocks) {
+        if (allWobbling.has(block)) {
+            block.classList.add('wobble');
+        } else {
+            block.classList.remove('wobble');
+        }
+    }
+}
+
+function isWobbling(block) {
+    return block.classList.contains('wobble');
 }
 
 function hasSupport(block, visited = new Set()) {
@@ -218,6 +290,8 @@ function applyGravity() {
         const currentY = parseFloat(block.style.top) || 0;
 
         if (currentY >= groundY) continue;
+
+        if (isWobbling(block)) continue;
 
         if (hasSupport(block)) continue;
 

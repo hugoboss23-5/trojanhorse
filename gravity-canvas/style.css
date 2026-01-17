@@ -38,6 +38,20 @@ body {
     cursor: grabbing;
 }
 
+.block.wobble {
+    background: #5a4444;
+    animation: wobble 0.15s ease-in-out infinite alternate;
+}
+
+@keyframes wobble {
+    0% {
+        transform: translateX(-2px);
+    }
+    100% {
+        transform: translateX(2px);
+    }
+}
+
 #connections {
     position: absolute;
     top: 0;
