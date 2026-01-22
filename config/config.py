@@ -12,7 +12,7 @@ load_dotenv()
 
 # API Configuration
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-MODEL = "claude-opus-4-5-20250514"
+MODEL = "claude-opus-4-5-20251101"
 
 # Memory Configuration
 BASE_PATH = Path(__file__).parent.parent
