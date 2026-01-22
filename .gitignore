@@ -1,6 +1,23 @@
+# Python
 *.db
 __pycache__/
 .venv/
-.env
-.env.*
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+!.env.example
+
+# Memory (user data - don't commit)
+memory/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
